@@ -3,10 +3,24 @@
   "permissions": {
     "allow": ["Bash(git add:*)", "Bash(pnpm typecheck:*)"],
     "ask": ["Bash(gh pr create:*)", "Bash(git commit:*)"],
-    "deny": ["Read(*.env)", "Bash(rm:*)", "Bash(curl:*)", "Bash(wget:*)"],
+    "deny": [
+      "Read(**/.env*)",
+      "Edit(**/.env*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(printenv:*)"
+    ],
     "defaultMode": "default",
     "disableBypassPermissionsMode": "disable",
     "additionalDirectories": ["~/.claude"]
+  },
+  "sandbox": {
+    "enabled": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyRead": ["./.env*", "./**/.env*"]
+    }
   },
   "alwaysThinkingEnabled": true,
   "disableArtifact": true,
