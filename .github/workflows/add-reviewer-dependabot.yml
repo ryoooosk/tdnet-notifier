@@ -1,0 +1,13 @@
+name: Add Reviewer to Dependabot
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  call:
+    uses: ryoooosk/reusable-workflows/.github/workflows/add-reviewer-to-dependabot.yml@main
+    permissions:
+      pull-requests: write
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
