@@ -29,5 +29,9 @@
     "lefthook": "^2.1.12",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "zod": "^4.6.2"
   }
 }
