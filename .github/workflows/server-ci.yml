@@ -26,3 +26,4 @@ jobs:
       - run: pnpm ci
       - run: pnpm typecheck
       - run: pnpm biome:ci
+      - run: pnpm test

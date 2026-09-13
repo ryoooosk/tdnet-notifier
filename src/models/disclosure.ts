@@ -1,15 +1,6 @@
-export interface Disclosure {
-  readonly source: DisclosureSource;
-  readonly originalId: string;
-  readonly code: string; // 英数4文字
-  readonly companyName: string;
-  readonly title: string;
-  readonly kind: DisclosureKind;
-  readonly documentUrl: string;
-  readonly disclosedAt: string; // UTC時刻
-}
+import z from 'zod';
 
-type DisclosureSource = 'tdnet' | 'edinet';
+const disclosureSource = ['tdnet', 'edinet'] as const;
 
 /**
  * 開示の種別。TDnet の一覧に種別カラムは無いため、表題の文字列から判定する。
@@ -18,44 +9,69 @@ type DisclosureSource = 'tdnet' | 'edinet';
  * 並び順は株価インパクトの大きい順。1 つの開示が `〜及び〜` で複数の事象を
  * 兼ねることがあるため、判定は上から順に最初に一致したものを採る想定。
  */
-export type DisclosureKind =
+const disclosureKind = [
   /** 業績予想の修正、業績予想と実績値との差異 */
-  | 'guidanceRevision'
+  'guidanceRevision',
   /** 特別損失・減損損失の計上 */
-  | 'specialLoss'
+  'specialLoss',
   /** 公開買付け（TOB / MBO）、意見表明、買付結果 */
-  | 'tenderOffer'
+  'tenderOffer',
   /** 合併、株式交換、株式移転、会社分割 */
-  | 'merger'
+  'merger',
   /** 子会社・関係会社の異動、設立、譲渡、組織再編 */
-  | 'subsidiary'
+  'subsidiary',
   /** 業務提携、資本業務提携 */
-  | 'alliance'
+  'alliance',
   /** 第三者割当、新株式発行、新株予約権付社債（希薄化を伴う資金調達） */
-  | 'equityFinance'
+  'equityFinance',
   /** 上場廃止、監理銘柄・特設注意市場銘柄の指定 */
-  | 'listingStatus'
+  'listingStatus',
   /** 剰余金の配当、配当予想の修正 */
-  | 'dividend'
+  'dividend',
   /** 自己株式の取得・取得状況・ToSTNeT-3 による買付け */
-  | 'buyback'
+  'buyback',
   /** 決算短信（四半期・通期） */
-  | 'earnings'
+  'earnings',
   /** 決算説明資料、想定質問と回答、説明会資料。短信と同時に出る補足資料 */
-  | 'earningsMaterial'
+  'earningsMaterial',
   /** 月次売上高、月次実績の開示 */
-  | 'monthlyReport'
+  'monthlyReport',
   /** 中期経営計画の策定・変更 */
-  | 'midTermPlan'
+  'midTermPlan',
   /** 資金の借入、社債発行など希薄化を伴わない資金調達 */
-  | 'financing'
+  'financing',
   /** 株主優待制度の新設・変更・廃止 */
-  | 'shareholderBenefit'
+  'shareholderBenefit',
   /** 新株予約権、ストック・オプション、譲渡制限付株式の発行 */
-  | 'stockCompensation'
+  'stockCompensation',
   /** 役員の異動、代表取締役の異動、人事 */
-  | 'personnel'
+  'personnel',
   /** 株主総会の招集、定款の変更、コーポレート・ガバナンス報告書 */
-  | 'governance'
+  'governance',
   /** 上記のいずれにも当てはまらないもの。分類できないのは異常ではない */
-  | 'other';
+  'other',
+] as const;
+
+export type DisclosureKind = (typeof disclosureKind)[number];
+
+/**
+ * 証券コード。英字を含むものは大文字が正準形（TDnet も大文字で返す）。
+ * 手書きの設定ファイルから来る値は小文字で書かれうるため、ここで揃えておく。
+ */
+export const securitiesCode = z
+  .string()
+  .regex(/^[a-zA-Z0-9]{4}$/, { error: '証券コードは半角英数字4文字です' })
+  .transform((code) => code.toUpperCase());
+
+export const disclosure = z.object({
+  source: z.enum(disclosureSource),
+  originalId: z.string(),
+  code: securitiesCode,
+  companyName: z.string(),
+  title: z.string(),
+  kind: z.enum(disclosureKind),
+  documentUrl: z.string(),
+  disclosedAt: z.iso.datetime(),
+});
+
+export type Disclosure = z.infer<typeof disclosure>;
