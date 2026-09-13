@@ -10,6 +10,10 @@
     "module": "nodenext",
     "target": "esnext",
     "types": ["node"],
+    // .ts ファイルは .ts と書いて import する
+    "allowImportingTsExtensions": true,
+    // ビルドする場合のみ、出力側で .js に書き換えさせる
+    "rewriteRelativeImportExtensions": true,
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
