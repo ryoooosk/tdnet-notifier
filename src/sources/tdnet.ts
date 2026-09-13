@@ -1,5 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as cheerio from 'cheerio';
+import type { Disclosure } from '../models/disclosure.ts';
+import { classifyTitle } from './tdnet-kind.ts';
 
 const BASE_URL = 'https://www.release.tdnet.info/inbs/';
 const USER_AGENT = 'tdnet-notifier/0.1';
@@ -26,8 +28,8 @@ interface TdnetListPage {
   readonly skippedRows: readonly SkippedRow[];
 }
 
-/** 一覧の 1 行。HTML に書かれている値をそのまま持つ */
-export interface TdnetRow {
+/** 一覧の 1 行。HTML に書かれている値をそのまま持つ中間表現 */
+interface TdnetRow {
   /** 開示時刻 `HH:MM`（JST）。日付は持たないので TdnetListPage.date と組み合わせる */
   readonly time: string;
   /** 5 桁の証券コード。数値ではなく文字列で扱う */
@@ -47,21 +49,23 @@ export interface TdnetRow {
 }
 
 /** 想定した形に読めず捨てた行。ログに出して TDnet 側の構造変化に気づくために持つ */
-export interface SkippedRow {
+interface SkippedRow {
   readonly index: number;
   readonly reason: string;
   readonly html: string;
 }
 
 /** 1 日分を通しで読んだ結果 */
-export interface TdnetDay {
+interface TdnetDay {
+  /** 一覧の対象日（JST, `YYYY-MM-DD`） */
   readonly date: string;
-  readonly rows: readonly TdnetRow[];
+  readonly disclosures: readonly Disclosure[];
+  /** その日の全開示件数。捨てた行があると disclosures.length より多くなる */
   readonly totalCount: number;
   readonly skippedRows: readonly SkippedRow[];
 }
 
-export type FetchResult<T> =
+type FetchResult<T> =
   | {
       readonly status: 'ok';
       readonly value: T;
@@ -138,11 +142,11 @@ function parseListPage(html: string): TdnetListPage {
 }
 
 /**
- * @description 1 日分の開示をページ送りしながら全件取得する。
+ * @description 1 日分の開示をページ送りしながら全件取得し、Disclosure に変換する。
  * 新着は 1 ページ目（時刻の降順）に入るため、更新判定は 1 ページ目の
  * Last-Modified だけで足りる。
  */
-export async function fetchDay(
+export async function fetchDisclosures(
   date: string,
   options: { readonly ifModifiedSince?: string | null } = {},
 ): Promise<FetchResult<TdnetDay>> {
@@ -160,16 +164,55 @@ export async function fetchDay(
     skippedRows.push(...nextPage.value.skippedRows);
   }
 
+  // 日付はページ全体にしか無いので、変換は全ページ読み終えてからまとめて行う
+  const pageDate = firstPage.value.date;
+
   return {
     status: 'ok',
     value: {
-      date: firstPage.value.date,
-      rows,
+      date: pageDate,
+      disclosures: rows.map((row) => toDisclosure(row, pageDate)),
       totalCount: firstPage.value.totalCount,
       skippedRows,
     },
     lastModified: firstPage.lastModified,
   };
+}
+
+/**
+ * @description 一覧の 1 行を Disclosure に変換する。
+ * 5 桁コード・タイムゾーンを持たない時刻・種別カラムの不在といった
+ * TDnet 固有の都合はここで吸収し、外には Disclosure だけを出す。
+ */
+function toDisclosure(row: TdnetRow, date: string): Disclosure {
+  return {
+    source: 'tdnet',
+    originalId: row.originalId,
+    // TDnet は 4 桁コードの末尾に 0 を足した 5 桁で返すので 4 桁に戻す
+    code: row.code.slice(0, 4),
+    companyName: row.companyName,
+    title: row.title,
+    kind: classifyTitle(row.title),
+    documentUrl: row.documentUrl,
+    // 時刻は一覧の行に、日付はページ全体にしか無いので組み合わせる
+    disclosedAt: jstToUtcIso(date, row.time),
+  };
+}
+
+/**
+ * @description JST の暦日 + `HH:MM` を UTC の ISO8601 文字列に変換する。
+ * TDnet は時刻にタイムゾーンを書かないため、JST であることはここで補う。
+ * オフセットを明示せずに `new Date()` へ渡すと実行環境のタイムゾーンで
+ * 解釈され、UTC で動く GitHub Actions 上だけ 9 時間ずれるので必ず付ける。
+ */
+function jstToUtcIso(date: string, time: string): string {
+  const jst = `${date}T${time}:00+09:00`;
+  const parsed = new Date(jst);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`日時を解釈できませんでした: ${JSON.stringify(jst)}`);
+  }
+
+  return parsed.toISOString();
 }
 
 function listPageUrl(date: string, page = 1): string {
