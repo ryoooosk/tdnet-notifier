@@ -18,7 +18,7 @@ type DisclosureSource = 'tdnet' | 'edinet';
  * 並び順は株価インパクトの大きい順。1 つの開示が `〜及び〜` で複数の事象を
  * 兼ねることがあるため、判定は上から順に最初に一致したものを採る想定。
  */
-type DisclosureKind =
+export type DisclosureKind =
   /** 業績予想の修正、業績予想と実績値との差異 */
   | 'guidanceRevision'
   /** 特別損失・減損損失の計上 */
