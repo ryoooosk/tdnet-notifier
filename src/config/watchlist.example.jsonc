@@ -1,0 +1,4 @@
+// watchlist.jsonc としてコピーして使用する
+{
+  "securitiesCodes": ["7203"]
+}

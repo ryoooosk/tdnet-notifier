@@ -9,7 +9,7 @@
     "format": "biome format --write",
     "biome:ci": "biome ci",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
