@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "check": "biome check --write",
+    "check": "biome check --write --no-errors-on-unmatched",
     "lint": "biome lint --write",
     "format": "biome format --write",
     "biome:ci": "biome ci",
