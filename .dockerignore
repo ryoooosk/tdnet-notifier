@@ -1,0 +1,16 @@
+# ホスト（darwin/arm64）のバイナリがイメージに混入すると pnpm ci の結果を壊す
+node_modules
+
+# 秘匿情報
+.env*
+
+.git
+.github
+.vscode
+.claude
+docs
+
+Dockerfile
+.dockerignore
+CLAUDE.md
+lefthook.yml
