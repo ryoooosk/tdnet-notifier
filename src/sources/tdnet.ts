@@ -69,7 +69,10 @@ type FetchResult<T> =
   | {
       readonly status: 'ok';
       readonly value: T;
-      /** 次回の If-Modified-Since に渡す値。state.json に持たせる想定 */
+      /**
+       * 次回の If-Modified-Since に渡す値。状態を持たない MVP では渡す先が
+       * 無いので使わない。Phase 3 で DB に持たせる
+       */
       readonly lastModified: string | null;
     }
   | { readonly status: 'notModified' }
@@ -171,12 +174,26 @@ export async function fetchDisclosures(
     status: 'ok',
     value: {
       date: pageDate,
-      disclosures: rows.map((row) => toDisclosure(row, pageDate)),
+      disclosures: dropDuplicates(rows).map((row) =>
+        toDisclosure(row, pageDate),
+      ),
       totalCount: firstPage.value.totalCount,
       skippedRows,
     },
     lastModified: firstPage.lastModified,
   };
+}
+
+/** @description originalId が重複した行を省く。*/
+function dropDuplicates(rows: readonly TdnetRow[]): TdnetRow[] {
+  const seenId = new Set<TdnetRow['originalId']>();
+
+  return rows.filter((row) => {
+    if (seenId.has(row.originalId)) return false;
+
+    seenId.add(row.originalId);
+    return true;
+  });
 }
 
 /**
