@@ -1,12 +1,9 @@
-import { setTimeout as sleep } from 'node:timers/promises';
 import * as cheerio from 'cheerio';
+import { politeFetch } from '../lib/fetch-client.ts';
 import type { Disclosure } from '../models/disclosure.ts';
 import { classifyTitle } from './tdnet-kind.ts';
 
 const BASE_URL = 'https://www.release.tdnet.info/inbs/';
-const USER_AGENT = 'tdnet-notifier/0.1';
-/** TDnet への負荷を抑えるための最小リクエスト間隔 */
-const MIN_REQUEST_INTERVAL_MS = 1_000;
 /** 一覧ページ 1 枚あたりの件数 */
 const PAGE_SIZE = 100;
 
@@ -79,6 +76,46 @@ type FetchResult<T> =
   | { readonly status: 'notFound' };
 
 /**
+ * @description 1 日分の開示をページ送りしながら全件取得し、Disclosure に変換する。
+ * 新着は 1 ページ目（時刻の降順）に入るため、更新判定は 1 ページ目の
+ * Last-Modified だけで足りる。
+ */
+export async function fetchDisclosures(
+  date: string,
+  options: { readonly ifModifiedSince?: string | null } = {},
+): Promise<FetchResult<TdnetDay>> {
+  const firstPage = await fetchListPage(date, 1, options);
+  if (firstPage.status !== 'ok') return firstPage;
+
+  const rows = [...firstPage.value.rows];
+  const skippedRows = [...firstPage.value.skippedRows];
+
+  for (let page = 2; page <= firstPage.value.pageCount; page++) {
+    const nextPage = await fetchListPage(date, page);
+    // 取得中に件数が減ってページが消えることもあるので、404 は打ち切り扱い
+    if (nextPage.status !== 'ok') break;
+    rows.push(...nextPage.value.rows);
+    skippedRows.push(...nextPage.value.skippedRows);
+  }
+
+  // 日付はページ全体にしか無いので、変換は全ページ読み終えてからまとめて行う
+  const pageDate = firstPage.value.date;
+
+  return {
+    status: 'ok',
+    value: {
+      date: pageDate,
+      disclosures: dropDuplicates(rows).map((row) =>
+        toDisclosure(row, pageDate),
+      ),
+      totalCount: firstPage.value.totalCount,
+      skippedRows,
+    },
+    lastModified: firstPage.lastModified,
+  };
+}
+
+/**
  * @description 一覧ページの HTML を素の行データに変換する。
  * 開示ゼロの日（土日祝）はテーブルごと存在しないが、これは異常ではないので
  * rows が空・totalCount が 0 の TdnetListPage を返す。
@@ -141,46 +178,6 @@ function parseListPage(html: string): TdnetListPage {
     totalCount,
     pageCount: Math.ceil(totalCount / PAGE_SIZE),
     skippedRows,
-  };
-}
-
-/**
- * @description 1 日分の開示をページ送りしながら全件取得し、Disclosure に変換する。
- * 新着は 1 ページ目（時刻の降順）に入るため、更新判定は 1 ページ目の
- * Last-Modified だけで足りる。
- */
-export async function fetchDisclosures(
-  date: string,
-  options: { readonly ifModifiedSince?: string | null } = {},
-): Promise<FetchResult<TdnetDay>> {
-  const firstPage = await fetchListPage(date, 1, options);
-  if (firstPage.status !== 'ok') return firstPage;
-
-  const rows = [...firstPage.value.rows];
-  const skippedRows = [...firstPage.value.skippedRows];
-
-  for (let page = 2; page <= firstPage.value.pageCount; page++) {
-    const nextPage = await fetchListPage(date, page);
-    // 取得中に件数が減ってページが消えることもあるので、404 は打ち切り扱い
-    if (nextPage.status !== 'ok') break;
-    rows.push(...nextPage.value.rows);
-    skippedRows.push(...nextPage.value.skippedRows);
-  }
-
-  // 日付はページ全体にしか無いので、変換は全ページ読み終えてからまとめて行う
-  const pageDate = firstPage.value.date;
-
-  return {
-    status: 'ok',
-    value: {
-      date: pageDate,
-      disclosures: dropDuplicates(rows).map((row) =>
-        toDisclosure(row, pageDate),
-      ),
-      totalCount: firstPage.value.totalCount,
-      skippedRows,
-    },
-    lastModified: firstPage.lastModified,
   };
 }
 
@@ -266,24 +263,6 @@ async function fetchListPage(
     value: parseListPage(await response.text()),
     lastModified: response.headers.get('last-modified'),
   };
-}
-
-let lastRequestAt = 0;
-
-/**
- * @description リクエスト間隔を最低 1 秒空け、User-Agent を明示して取得する。
- * 直前の時刻を見て待つだけの排他制御なので、**逐次呼び出しが前提**。
- * 並行に呼ぶと両方が同時に「待ち時間なし」と判断して間隔が守られない。
- */
-async function politeFetch(
-  url: string,
-  headers: Record<string, string> = {},
-): Promise<Response> {
-  const waitMs = MIN_REQUEST_INTERVAL_MS - (Date.now() - lastRequestAt);
-  if (waitMs > 0) await sleep(waitMs);
-  lastRequestAt = Date.now();
-
-  return fetch(url, { headers: { 'User-Agent': USER_AGENT, ...headers } });
 }
 
 function findProblem(row: {
