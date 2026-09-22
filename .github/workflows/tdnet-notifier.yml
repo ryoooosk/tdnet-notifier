@@ -1,0 +1,76 @@
+name: tdnet-notifier
+
+on:
+  schedule:
+    # 毎日 JST 17:30（UTC 08:30）に実行
+    - cron: "30 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tdnet-notifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: verify config
+        id: verify
+        env:
+          WATCHLIST_JSONC: ${{ secrets.WATCHLIST_JSONC }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: |
+          missing=()
+          for name in WATCHLIST_JSONC RESEND_API_KEY EMAIL_FROM EMAIL_TO; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::未設定の Secret / Variable: ${missing[*]}"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm ci
+      - name: write watchlist
+        env:
+          WATCHLIST_JSONC: ${{ secrets.WATCHLIST_JSONC }}
+        run: printf '%s' "$WATCHLIST_JSONC" > src/data-source/watchlist/watchlist.jsonc
+
+      - name: execute Application
+        run: node src/index.ts
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
+      - name: failure notice
+        # 設定が揃っていない（verify config が落ちた）ときは送りようがないので送らない
+        if: failure() && steps.verify.outcome == 'success'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n \
+            --arg from "$EMAIL_FROM" \
+            --arg to "$EMAIL_TO" \
+            --arg url "$RUN_URL" \
+            '{
+              from: $from,
+              to: [$to],
+              subject: "tdnet-notifier が失敗しました",
+              text: "tdnet-notifier の実行が失敗しました。開示があっても通知は届いていません。\n\n実行ログ: \($url)"
+            }' \
+            | curl -sS --fail-with-body \
+                -X POST https://api.resend.com/emails \
+                -H "Authorization: Bearer $RESEND_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d @-
