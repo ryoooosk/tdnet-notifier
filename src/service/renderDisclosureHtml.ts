@@ -1,4 +1,4 @@
-import type { Disclosure, DisclosureKind } from '../models/disclosure.ts';
+import type { Disclosure, DisclosureKind } from '../model/disclosure.ts';
 import { escapeHtml } from '../utils.ts';
 
 const kindLabel: Record<DisclosureKind, string> = {

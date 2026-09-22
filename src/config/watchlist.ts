@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type ParseError, parse, printParseErrorCode } from 'jsonc-parser';
 import z from 'zod';
-import { type Disclosure, securitiesCode } from '../models/disclosure.ts';
+import { type Disclosure, securitiesCode } from '../model/disclosure.ts';
 
 const watchListSchema = z.object({
   securitiesCodes: z.array(securitiesCode),

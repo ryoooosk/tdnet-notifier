@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { politeFetch } from '../lib/fetch-client.ts';
-import type { Disclosure } from '../models/disclosure.ts';
+import type { Disclosure } from '../model/disclosure.ts';
 import { classifyTitle } from './tdnet-kind.ts';
 
 const BASE_URL = 'https://www.release.tdnet.info/inbs/';

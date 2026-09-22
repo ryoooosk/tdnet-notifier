@@ -1,4 +1,4 @@
-import type { DisclosureKind } from '../models/disclosure.ts';
+import type { DisclosureKind } from '../model/disclosure.ts';
 
 /**
  * `（開示事項の経過）「X」について` のように、表題の先頭に付く殻。
