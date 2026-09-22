@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { type ParseError, parse, printParseErrorCode } from 'jsonc-parser';
 import z from 'zod';
-import { securitiesCode } from '../models/disclosure.ts';
+import { type Disclosure, securitiesCode } from '../models/disclosure.ts';
 
 const watchListSchema = z.object({
   securitiesCodes: z.array(securitiesCode),
 });
 
-export function loadWatchList(filePath: string): ReadonlySet<string> {
+export function loadWatchList(): ReadonlySet<Disclosure['code']> {
+  const filePath = join(import.meta.dirname, 'watchlist.jsonc');
   const source = readFileSync(filePath, 'utf8');
 
   const errors: ParseError[] = [];
