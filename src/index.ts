@@ -6,7 +6,7 @@ import {
 import fetchWatchlistDisclosure from './usecase/fetch-watchlist-disclosure.ts';
 import { getToday } from './utils.ts';
 
-export default async function index() {
+async function main() {
   const today = getToday();
 
   const targetDisclosures = await fetchWatchlistDisclosure(today);
@@ -26,3 +26,5 @@ export default async function index() {
 
   console.log(`メールを送信しました (id: ${sent?.id})`);
 }
+
+await main();

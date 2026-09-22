@@ -2,7 +2,7 @@
 
 TDnet の適時開示を 1 日 1 回チェックし、ウォッチリストに入れた銘柄のものだけをメールで通知する。
 
-開発中。通知を通しで実行するエントリポイントはまだ無い（`index.ts` は雛形のまま）。
+開発中。GitHub Actions の cron で毎日 17:30 JST に実行する。
 
 ## 必要なもの
 
@@ -25,3 +25,34 @@ pnpm install
 cp src/data-source/watchlist/watchlist.example.jsonc src/data-source/watchlist/watchlist.jsonc
 cp .env.example .env
 ```
+
+## 実行
+
+```bash
+node --env-file=.env src/index.ts
+```
+
+## GitHub Actions
+
+[.github/workflows/tdnet-notifier.yml](.github/workflows/tdnet-notifier.yml) が毎日 17:30 JST に実行する。
+`watchlist.jsonc` と `.env` はリポジトリに無いので、以下を登録しておく必要がある。
+
+| 名前 | 種別 | 内容 |
+| --- | --- | --- |
+| `WATCHLIST_JSONC` | Secret | `watchlist.jsonc` の中身そのまま |
+| `RESEND_API_KEY` | Secret | Resend の API キー |
+| `EMAIL_TO` | Secret | 通知先アドレス |
+| `EMAIL_FROM` | Variable | 送信元アドレス（Phase 1 は `onboarding@resend.dev`） |
+
+```bash
+gh secret set WATCHLIST_JSONC < src/data-source/watchlist/watchlist.jsonc
+gh secret set RESEND_API_KEY
+gh secret set EMAIL_TO
+gh variable set EMAIL_FROM
+```
+
+監視銘柄を入れ替えたら `WATCHLIST_JSONC` の更新を忘れないこと。忘れても失敗せず、
+古いウォッチリストのまま通知が届き続ける。
+
+なお、60 日間リポジトリに活動がないと GitHub 側で cron が自動停止する。
+止まったら Actions の画面から手動で再有効化する。
