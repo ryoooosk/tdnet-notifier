@@ -1,7 +1,7 @@
 {
   "name": "tdnet-notifier",
   "version": "1.0.0",
-  "description": "",
+  "description": "TDnet の適時開示をウォッチリストで絞ってメール通知する",
   "main": "index.js",
   "scripts": {
     "check": "biome check --write --no-errors-on-unmatched",
@@ -12,8 +12,8 @@
     "test": "node --test"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "ryoooosk",
+  "license": "UNLICENSED",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",

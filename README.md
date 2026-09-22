@@ -56,3 +56,13 @@ gh variable set EMAIL_FROM
 
 なお、60 日間リポジトリに活動がないと GitHub 側で cron が自動停止する。
 止まったら Actions の画面から手動で再有効化する。
+
+## 取得先への配慮
+
+TDnet の一覧ページは 1 秒以上の間隔を空け、User-Agent にこのリポジトリの URL を付けて取得している
+（[src/lib/fetch-client.ts](src/lib/fetch-client.ts)）。fork して動かす場合は cron の頻度を上げすぎないこと。
+TDnet の利用条件は各自で確認すること。
+
+## ライセンス
+
+ライセンスは設定していない（全権利留保）。閲覧・参考は自由だが、再配布や再利用は想定していない。
