@@ -4,7 +4,7 @@ import type { Disclosure } from '../model/disclosure.ts';
 
 export default async function fetchWatchlistDisclosure(
   date: string,
-): Promise<readonly Disclosure[]> {
+): Promise<{ disclosures: Disclosure[]; totalCount: number }> {
   const res = await fetchDisclosures(date);
 
   if (res.status === 'notFound') {
@@ -12,10 +12,10 @@ export default async function fetchWatchlistDisclosure(
   }
   if (res.status === 'notModified') {
     console.warn('前回の取得から更新がありません。');
-    return [];
+    return { disclosures: [], totalCount: 0 };
   }
 
-  const { disclosures, skippedRows } = res.value;
+  const { disclosures, skippedRows, totalCount } = res.value;
 
   // 読めずに捨てた行は TDnet 側の構造変化のサイン。
   if (skippedRows.length > 0) {
@@ -27,5 +27,8 @@ export default async function fetchWatchlistDisclosure(
 
   const targetCodes = loadWatchList();
 
-  return disclosures.filter((d) => targetCodes.has(d.code));
+  return {
+    disclosures: disclosures.filter((d) => targetCodes.has(d.code)),
+    totalCount,
+  };
 }
