@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { describe, test } from 'node:test';
-import { loadWatchList } from './watchlist.ts';
+import { loadWatchList } from './load-watch-list.ts';
 
 describe('loadWatchList', () => {
   test('同梱の watchlist.jsonc から証券コードの集合を読む', () => {

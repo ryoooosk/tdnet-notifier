@@ -1,5 +1,5 @@
-import { loadWatchList } from '../config/watchlist.ts';
-import { fetchDisclosures } from '../data-source/tdnet.ts';
+import { fetchDisclosures } from '../data-source/tdnet/fetch-disclosures.ts';
+import { loadWatchList } from '../data-source/watchlist/load-watch-list.ts';
 import type { Disclosure } from '../model/disclosure.ts';
 
 export default async function fetchWatchlistDisclosure(

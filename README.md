@@ -22,6 +22,6 @@ pnpm install
 1. 設定ファイルの用意
 
 ```bash
-cp src/config/watchlist.example.jsonc src/config/watchlist.jsonc
+cp src/data-source/watchlist/watchlist.example.jsonc src/data-source/watchlist/watchlist.jsonc
 cp .env.example .env
 ```
