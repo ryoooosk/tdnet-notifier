@@ -6,6 +6,7 @@ on:
 
 jobs:
   call:
+    if: github.actor == 'dependabot[bot]'
     uses: ryoooosk/reusable-workflows/.github/workflows/add-reviewer-to-dependabot.yml@main
     permissions:
       pull-requests: write
