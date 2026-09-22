@@ -2,8 +2,8 @@ import { sendMail } from './lib/resend.ts';
 import {
   renderDisclosureHtml,
   renderDisclosureText,
-} from './presentation/renderDisclosureHtml.ts';
-import fetchWatchlistDisclosure from './service/fetchWatchlistDisclosure.ts';
+} from './presentation/render-disclosure-html.ts';
+import fetchWatchlistDisclosure from './service/fetch-watchlist-disclosure.ts';
 import { getToday } from './utils.ts';
 
 export default async function index() {
