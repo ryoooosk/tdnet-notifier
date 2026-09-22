@@ -3,7 +3,7 @@ import {
   renderDisclosureHtml,
   renderDisclosureText,
 } from './presentation/render-disclosure-html.ts';
-import fetchWatchlistDisclosure from './service/fetch-watchlist-disclosure.ts';
+import fetchWatchlistDisclosure from './usecase/fetch-watchlist-disclosure.ts';
 import { getToday } from './utils.ts';
 
 export default async function index() {
