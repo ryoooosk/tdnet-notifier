@@ -26,4 +26,8 @@ jobs:
       - run: pnpm ci
       - run: pnpm typecheck
       - run: pnpm biome:ci
+      # watchlist.jsonc は .gitignore 済みでリポジトリに無いが、
+      # loadWatchList のテストが同梱のこのパスを読むため example から用意する
+      - name: copy watchlist
+        run: cp src/config/watchlist.example.jsonc src/config/watchlist.jsonc
       - run: pnpm test

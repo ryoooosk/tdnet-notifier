@@ -1,14 +1,21 @@
 import { Resend } from 'resend';
 import { loadEnv } from '../config/env.ts';
 
-const resend = new Resend(loadEnv().RESEND_API_KEY);
+interface Mail {
+  readonly subject: string;
+  readonly html: string;
+  readonly text: string;
+}
 
-export async function sendMail(subject: string, html: string) {
-  const { data, error } = await resend.emails.send({
-    from: loadEnv().EMAIL_FROM,
-    to: loadEnv().EMAIL_TO,
+export async function sendMail({ subject, html, text }: Mail) {
+  const { RESEND_API_KEY, EMAIL_FROM, EMAIL_TO } = loadEnv();
+
+  const { data, error } = await new Resend(RESEND_API_KEY).emails.send({
+    from: EMAIL_FROM,
+    to: EMAIL_TO,
     subject,
     html,
+    text,
   });
 
   if (error)

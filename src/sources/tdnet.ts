@@ -79,6 +79,7 @@ type FetchResult<T> =
  * @description 1 日分の開示をページ送りしながら全件取得し、Disclosure に変換する。
  * 新着は 1 ページ目（時刻の降順）に入るため、更新判定は 1 ページ目の
  * Last-Modified だけで足りる。
+ * @param date JSTの日付で形式は、YYYY-MM-DD。
  */
 export async function fetchDisclosures(
   date: string,
