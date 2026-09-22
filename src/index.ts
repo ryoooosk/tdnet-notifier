@@ -9,7 +9,8 @@ import { getToday } from './utils.ts';
 async function main() {
   const today = getToday();
 
-  const targetDisclosures = await fetchWatchlistDisclosure(today);
+  const { disclosures: targetDisclosures } =
+    await fetchWatchlistDisclosure(today);
 
   if (targetDisclosures.length === 0) {
     console.log(
